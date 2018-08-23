@@ -39,8 +39,6 @@ Below you'll find information about performing common tasks.
   * [yarn android](#npm-run-android)
   * [yarn eject](#npm-run-eject)
 
-<br>
-
   ### `yarn start`
 
   Runs your app in development mode.
