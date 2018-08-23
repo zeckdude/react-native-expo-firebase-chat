@@ -1,0 +1,21 @@
+{
+  "presets": ["babel-preset-expo"],
+  "env": {
+    "development": {
+      "plugins": ["transform-react-jsx-source"]
+    }
+  },
+  "plugins": [
+    ["module-resolver", {
+      "root": ["./"],
+      "extensions": [".js", ".png", ".ios.js", ".android.js"],
+      "alias": {
+        "shared": "./src/components/shared",
+        "screens": "./src/components/screens",
+        "api": "./src/api",
+        "config": "./src/config",
+        "helpers": "./src/helpers",
+      }
+    }]
+  ]
+}

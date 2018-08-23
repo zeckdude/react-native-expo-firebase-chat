@@ -1,0 +1,26 @@
+{
+  "parser": "babel-eslint",
+  "extends": "airbnb",
+  "rules": {
+    "no-use-before-define": ["error", { "variables": false }],
+    "react/prop-types": 0,
+    "react/destructuring-assignment": 0,
+    "react/jsx-filename-extension": 0,
+    "import/prefer-default-export": 0,
+  },
+  "settings": {
+    "import/resolver": {
+      "babel-module": {
+        "root": ["./"],
+        "extensions": [".js", ".png", ".ios.js", ".android.js"],
+        "alias": {
+          "shared": "./src/components/shared",
+          "screens": "./src/components/screens",
+          "api": "./src/api",
+          "config": "./src/config",
+          "helpers": "./src/helpers",
+        }
+      }
+    }
+  }
+}

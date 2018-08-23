@@ -1,0 +1,42 @@
+{
+  "name": "receipt-chain-chat",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {
+    "eslint": "^5.4.0",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-jsx-a11y": "^6.1.1",
+    "eslint-plugin-react": "^7.11.1",
+    "jest-expo": "~27.0.0",
+    "react-native-scripts": "1.14.0",
+    "react-test-renderer": "16.3.1"
+  },
+  "main": "./node_modules/react-native-scripts/build/bin/crna-entry.js",
+  "scripts": {
+    "start": "react-native-scripts start",
+    "eject": "react-native-scripts eject",
+    "android": "react-native-scripts android",
+    "ios": "react-native-scripts ios",
+    "test": "jest",
+    "lint": "eslint"
+  },
+  "jest": {
+    "preset": "jest-expo"
+  },
+  "dependencies": {
+    "babel-eslint": "^8.2.6",
+    "babel-plugin-module-resolver": "^3.1.1",
+    "eslint-import-resolver-babel-module": "^4.0.0",
+    "expo": "^27.0.1",
+    "firebase": "^5.4.0",
+    "react": "16.3.1",
+    "react-native": "~0.55.2",
+    "react-native-elements": "^0.19.1",
+    "react-native-flash-message": "^0.1.9",
+    "react-native-gifted-chat": "^0.3.0",
+    "react-native-loading-spinner-overlay": "^0.5.2",
+    "react-navigation": "1.5.11",
+    "validator": "^10.6.0"
+  }
+}
