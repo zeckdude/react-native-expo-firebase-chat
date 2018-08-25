@@ -10,7 +10,7 @@ import MainMenu from './src/components/screens/MainMenu';
 import UserList from './src/components/screens/UserList';
 import Chat from './src/components/screens/Chat';
 import GlobalChat from './src/components/screens/GlobalChat';
-import ForgetPassword from './src/components/screens/ForgetPassword';
+import ResetPassword from './src/components/screens/ResetPassword';
 import Register from './src/components/screens/Register';
 
 const AppStack = StackNavigator(
@@ -33,28 +33,28 @@ const AppStack = StackNavigator(
         title: 'Join',
       },
     },
-    ForgetPassword: {
-      screen: ForgetPassword,
+    ResetPassword: {
+      screen: ResetPassword,
       navigationOptions: {
-        title: 'ForgetPassword',
+        title: 'Reset Password',
       },
     },
     MainMenu: {
       screen: MainMenu,
       navigationOptions: {
-        title: 'MainMenu',
+        title: 'Main Menu',
       },
     },
     GlobalChat: {
       screen: GlobalChat,
       navigationOptions: {
-        title: 'GlobalChat',
+        title: 'Global Chat',
       },
     },
     UserList: {
       screen: UserList,
       navigationOptions: {
-        title: 'UserList',
+        title: 'User List',
       },
     },
     Chat: {
