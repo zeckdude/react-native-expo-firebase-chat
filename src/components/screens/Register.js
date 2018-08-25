@@ -4,9 +4,7 @@ import {
   StyleSheet,
   Text,
   View,
-  TextInput,
   StatusBar,
-  TouchableOpacity,
   KeyboardAvoidingView,
   ScrollView,
 } from 'react-native';
@@ -14,10 +12,12 @@ import {
 import { Icon } from 'react-native-elements';
 import { showMessage } from 'react-native-flash-message';
 import Spinner from 'react-native-loading-spinner-overlay';
+import Button from 'shared/Button';
+import TextInput from 'shared/TextInput';
 
 import firebase from 'config/firebase';
 import api from 'api';
-import { isPopulated, isEmail } from 'helpers/validation';
+import validateForm from 'helpers/validation';
 
 
 export default class Register extends Component {
@@ -47,39 +47,62 @@ export default class Register extends Component {
     });
   }
 
-  validateForm = () => {
+  runValidation = () => {
     const {
       name, email, password, passwordConfirmation,
     } = this.state;
-    const requiredFields = [
+
+    const fields = [
       {
         value: name,
-        message: 'Please enter your name',
+        verify: [{
+          type: 'isPopulated',
+          message: 'Please enter your name',
+        }],
       },
       {
         value: email,
-        message: 'Please enter your email address',
+        verify: [
+          {
+            type: 'isPopulated',
+            message: 'Please enter your email address',
+          },
+          {
+            type: 'isEmail',
+            message: 'Please format your email address correctly',
+          },
+        ],
       },
       {
         value: password,
-        message: 'Please enter your password',
+        verify: [
+          {
+            type: 'isPopulated',
+            message: 'Please enter your password',
+          },
+          {
+            type: 'isMatched',
+            matchValue: passwordConfirmation,
+            message: 'Password and Confirmation must match',
+          },
+          {
+            type: 'isGreaterThanLength',
+            length: 5,
+            message: 'Password must be at least six characters',
+          },
+        ],
       },
       {
         value: passwordConfirmation,
-        message: 'Please confirm your password',
+        verify: [{
+          type: 'isPopulated',
+          message: 'Please confirm your password',
+        }],
       },
     ];
 
-    const errorMessage = requiredFields.reduce((errorString, field, index) => {
-      if (!isPopulated(field.value)) {
-        if (index === 0) { return field.message; }
-        return `${errorString}\n${field.message}`;
-      }
-      return errorString;
-    }, '');
-
-    if (errorMessage.length) {
-      debugger;
+    const errorMessage = validateForm(fields);
+    if (errorMessage) {
       showMessage({
         message: 'Check your form',
         description: errorMessage,
@@ -88,15 +111,15 @@ export default class Register extends Component {
 
       return false;
     }
+
     return true;
   }
 
   onSubmitRegistration = () => {
     const { email, password } = this.state;
 
-    const isFormValid = this.validateForm();
+    const isFormValid = this.runValidation();
     if (!isFormValid) {
-      // this.setState({ isLoading: false });
       return;
     }
 
@@ -110,8 +133,6 @@ export default class Register extends Component {
         this.setState({ isLoading: false });
       })
       .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
         showMessage({
           message: 'Check your form',
           description: `${error.message} (${error.code})`,
@@ -138,54 +159,36 @@ export default class Register extends Component {
           <TextInput
             value={this.state.name}
             onChangeText={name => this.setState({ name })}
-            style={styles.input}
             placeholder="Name"
-            placeholderTextColor="#4f4e4e"
-            returnKeyType="next"
             ref={(input) => { this.nameInput = input; }}
             onSubmitEditing={() => this.emailInput.focus()}
           />
           <TextInput
             value={this.state.email}
             onChangeText={email => this.setState({ email })}
-            style={styles.input}
-            placeholderTextColor="#4f4e4e"
-            returnKeyType="next"
             ref={(input) => { this.emailInput = input; }}
             onSubmitEditing={() => this.passwordInput.focus()}
             keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder="Email"
+            placeholder="Email Address"
           />
           <TextInput
             value={this.state.password}
             onChangeText={password => this.setState({ password })}
-            style={styles.input}
             placeholder="Password"
             secureTextEntry
-            placeholderTextColor="#4f4e4e"
             ref={(input) => { this.passwordInput = input; }}
             onSubmitEditing={() => this.passwordInput.focus()}
-            returnKeyType="next"
           />
           <TextInput
             value={this.state.passwordConfirmation}
             onChangeText={passwordConfirmation => this.setState({ passwordConfirmation })}
-            style={styles.input}
             placeholder="Confirm Password"
             secureTextEntry
-            placeholderTextColor="#4f4e4e"
             returnKeyType="go"
             ref={(input) => { this.passwordConfirmationInput = input; }}
           />
         </KeyboardAvoidingView>
-        <TouchableOpacity
-          onPress={this.onSubmitRegistration}
-          style={styles.button}
-        >
-          <Text style={styles.buttonText}>Register</Text>
-        </TouchableOpacity>
+        <Button onPress={this.onSubmitRegistration}>SIGN UP</Button>
         <Spinner visible={this.state.isLoading} />
       </ScrollView>
     );

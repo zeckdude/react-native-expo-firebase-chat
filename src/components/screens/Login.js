@@ -2,9 +2,7 @@ import React, { Component } from 'react';
 import {
   AppRegistry,
   KeyboardAvoidingView,
-  TouchableOpacity,
   StatusBar,
-  TextInput,
   StyleSheet,
   Text,
   View,
@@ -14,6 +12,8 @@ import { Icon } from 'react-native-elements';
 import { showMessage } from 'react-native-flash-message';
 import Spinner from 'react-native-loading-spinner-overlay';
 import Button from 'shared/Button';
+import TextInput from 'shared/TextInput';
+import validateForm from 'helpers/validation';
 
 import firebase from 'config/firebase';
 
@@ -39,9 +39,58 @@ export default class Login extends Component {
     });
   }
 
-  onLoginPress = () => {
-    this.setState({ isLoading: true });
+  runValidation = () => {
     const { email, password } = this.state;
+
+    const fields = [
+      {
+        value: email,
+        verify: [
+          {
+            type: 'isPopulated',
+            message: 'Please enter your email address',
+          },
+          {
+            type: 'isEmail',
+            message: 'Please format your email address correctly',
+          },
+        ],
+      },
+      {
+        value: password,
+        verify: [
+          {
+            type: 'isPopulated',
+            message: 'Please enter your password',
+          },
+        ],
+      },
+    ];
+
+    const errorMessage = validateForm(fields);
+    if (errorMessage) {
+      showMessage({
+        message: 'Check your form',
+        description: errorMessage,
+        type: 'danger',
+      });
+
+      return false;
+    }
+
+    return true;
+  }
+
+  onLoginPress = () => {
+    const { email, password } = this.state;
+
+    const isFormValid = this.runValidation();
+    if (!isFormValid) {
+      return;
+    }
+
+    this.setState({ isLoading: true });
+
     firebase
       .auth()
       .signInWithEmailAndPassword(email, password)
@@ -49,8 +98,6 @@ export default class Login extends Component {
         this.setState({ isLoading: false });
       })
       .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
         showMessage({
           message: 'Check your form',
           description: `${error.message} (${error.code})`,
@@ -77,20 +124,13 @@ export default class Login extends Component {
         <KeyboardAvoidingView style={styles.loginformContainer}>
           <TextInput
             placeholder="Email Address"
-            placeholderTextColor="#4f4e4e"
-            style={styles.input}
-            returnKeyType="next"
             onSubmitEditing={() => this.passwordInput.focus()}
             keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
             value={this.state.email}
             onChangeText={email => this.setState({ email })}
           />
           <TextInput
             placeholder="Password"
-            placeholderTextColor="#4f4e4e"
-            style={styles.input}
             returnKeyType="go"
             secureTextEntry
             ref={(input) => { this.passwordInput = input; }}
@@ -105,7 +145,7 @@ export default class Login extends Component {
         >
           Sign up
         </Button>
-        <Button onPress={() => this.props.navigation.navigate('ForgetPassword')}>Forget Password</Button>
+        <Button onPress={() => this.props.navigation.navigate('ResetPassword')}>Reset Password</Button>
         <Spinner visible={this.state.isLoading} />
       </View>
     );
@@ -133,14 +173,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignSelf: 'stretch',
     marginTop: 20,
-  },
-  input: {
-    height: 40,
-    width: '100%',
-    marginBottom: 10,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    color: '#4f4e4e',
-    paddingHorizontal: 10,
   },
   signUpButton: {
     marginBottom: 10,
