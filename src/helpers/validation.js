@@ -12,19 +12,16 @@ const getErrorsString = errors => errors.reduce((CompleteErrorString, errorMessa
 
 const getValidationErrors = fieldsConfig => fieldsConfig
   .map((field) => {
-    for (let i = 0; i < field.verify.length; i += 1) {
-      const verification = field.verify[i];
-
+    const matched = field.verify.find((verification) => {
       if (verification.type === 'isPopulated' && !isPopulated(field.value)) {
-        return verification.message;
+        return true;
       }
-
       if (verification.type === 'isGreaterThanLength' && !isGreaterThanLength(field.value, verification.length)) {
-        return verification.message;
+        return true;
       }
 
       if (verification.type === 'isEmail' && !isEmail(field.value)) {
-        return verification.message;
+        return true;
       }
 
       if (
@@ -33,14 +30,15 @@ const getValidationErrors = fieldsConfig => fieldsConfig
               && isPopulated(verification.matchValue)
               && !isMatched(field.value, verification.matchValue)
       ) {
-        return verification.message;
+        return true;
       }
 
       if (verification.type === 'isCustom' && !verification.condition) {
-        return verification.message;
+        return true;
       }
-    }
-    return false;
+    });
+
+    return !!matched && matched.message;
   })
   // Filter out all messages that are not false
   .filter(message => message);

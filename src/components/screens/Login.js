@@ -1,19 +1,17 @@
 import React, { Component } from 'react';
 import {
-  AppRegistry,
   KeyboardAvoidingView,
-  StatusBar,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
-import { Icon } from 'react-native-elements';
 import { showMessage } from 'react-native-flash-message';
-import Spinner from 'react-native-loading-spinner-overlay';
 import Button from 'shared/Button';
 import TextInput from 'shared/TextInput';
+import IconTitleSet from 'shared/IconTitleSet';
 import validateForm from 'helpers/validation';
+import Wrapper from 'screens/Wrapper';
+import { get } from 'lodash';
 
 import firebase from 'config/firebase';
 
@@ -37,6 +35,19 @@ export default class Login extends Component {
         });
       }
     });
+  }
+
+  componentDidMount() {
+    const messageProps = get(this.props, 'navigation.state.params.messageProps');
+    if (messageProps) {
+      const { title, body, type } = messageProps;
+
+      showMessage({
+        message: title,
+        description: body,
+        type,
+      });
+    }
   }
 
   runValidation = () => {
@@ -111,43 +122,43 @@ export default class Login extends Component {
 
   render() {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#16a085" />
-        <View style={styles.logoContainer}>
-          <Icon
-            name="chat"
-            size={100}
-            color="#bdede3"
-          />
-          <Text style={styles.subtext}>Chat-a-lot</Text>
+      <Wrapper isLoading={this.state.isLoading}>
+        <View style={styles.container}>
+          <IconTitleSet
+            iconName="chat"
+            iconSize={100}
+            iconColor="#bdede3"
+            style={styles.iconTitleSet}
+          >
+            Chat-a-lot
+          </IconTitleSet>
+          <KeyboardAvoidingView style={styles.loginformContainer}>
+            <TextInput
+              placeholder="Email Address"
+              onSubmitEditing={() => this.passwordInput.focus()}
+              keyboardType="email-address"
+              value={this.state.email}
+              onChangeText={email => this.setState({ email })}
+            />
+            <TextInput
+              placeholder="Password"
+              returnKeyType="go"
+              secureTextEntry
+              ref={(input) => { this.passwordInput = input; }}
+              value={this.state.password}
+              onChangeText={password => this.setState({ password })}
+            />
+            <Button onPress={this.onLoginPress}>LOGIN</Button>
+          </KeyboardAvoidingView>
+          <Button
+            onPress={() => this.props.navigation.navigate('Register')}
+            style={styles.signUpButton}
+          >
+            Sign up
+          </Button>
+          <Button onPress={() => this.props.navigation.navigate('ResetPassword')}>Reset Password</Button>
         </View>
-        <KeyboardAvoidingView style={styles.loginformContainer}>
-          <TextInput
-            placeholder="Email Address"
-            onSubmitEditing={() => this.passwordInput.focus()}
-            keyboardType="email-address"
-            value={this.state.email}
-            onChangeText={email => this.setState({ email })}
-          />
-          <TextInput
-            placeholder="Password"
-            returnKeyType="go"
-            secureTextEntry
-            ref={(input) => { this.passwordInput = input; }}
-            value={this.state.password}
-            onChangeText={password => this.setState({ password })}
-          />
-          <Button onPress={this.onLoginPress}>LOGIN</Button>
-        </KeyboardAvoidingView>
-        <Button
-          onPress={() => this.props.navigation.navigate('Register')}
-          style={styles.signUpButton}
-        >
-          Sign up
-        </Button>
-        <Button onPress={() => this.props.navigation.navigate('ResetPassword')}>Reset Password</Button>
-        <Spinner visible={this.state.isLoading} />
-      </View>
+      </Wrapper>
     );
   }
 }
@@ -159,35 +170,14 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 60,
   },
-  logoContainer: {
-    alignItems: 'center',
-  },
-  subtext: {
-    color: '#ffffff',
-    fontSize: 25,
-    marginTop: 10,
-    textAlign: 'center',
-    opacity: 0.8,
+  iconTitleSet: {
+    marginBottom: 20,
   },
   loginformContainer: {
     flex: 1,
     alignSelf: 'stretch',
-    marginTop: 20,
   },
   signUpButton: {
     marginBottom: 10,
   },
-  buttonText: {
-    textAlign: 'center',
-    color: '#FFF',
-    fontWeight: '700',
-  },
-  error: {
-    margin: 8,
-    marginBottom: 0,
-    color: 'red',
-    textAlign: 'center',
-  },
 });
-
-AppRegistry.registerComponent('Login', () => Login);

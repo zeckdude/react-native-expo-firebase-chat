@@ -1,17 +1,17 @@
 import React, { Component } from 'react';
 import {
   StyleSheet,
-  Text,
   View,
-  StatusBar,
 } from 'react-native';
-import Spinner from 'react-native-loading-spinner-overlay';
-import { Icon } from 'react-native-elements';
 import { showMessage } from 'react-native-flash-message';
-import validateForm from 'helpers/validation';
+
 import Button from 'shared/Button';
 import TextInput from 'shared/TextInput';
+import IconTitleSet from 'shared/IconTitleSet';
+import Wrapper from 'screens/Wrapper';
+
 import api from 'api';
+import validateForm from 'helpers/validation';
 
 export default class ResetPassword extends Component {
   constructor() {
@@ -68,7 +68,13 @@ export default class ResetPassword extends Component {
     api.sendPasswordResetEmail(email)
       .then(() => {
         this.setState({ isLoading: false });
-        this.props.navigation.navigate('Login');
+        this.props.navigation.navigate('Login', {
+          messageProps: {
+            title: 'Your mail is on its way',
+            body: 'Check your inbox for your reset email',
+            type: 'warning',
+          },
+        });
       })
       .catch((error) => {
         showMessage({
@@ -84,62 +90,38 @@ export default class ResetPassword extends Component {
 
   render() {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#16a085" />
-        <View style={styles.logoContainer}>
-          <Icon
-            name="mail"
-            size={100}
-            color="#bdede3"
+      <Wrapper isLoading={this.state.isLoading}>
+        <View style={styles.container}>
+          <IconTitleSet
+            iconName="mail"
+            iconSize={100}
+            iconColor="#bdede3"
+            style={styles.iconTitleSet}
+          >
+            Send Reset Email
+          </IconTitleSet>
+          <TextInput
+            placeholder="Email Address"
+            keyboardType="email-address"
+            value={this.state.email}
+            onChangeText={email => this.setState({ email })}
           />
-          <Text style={styles.subtext}>Send Reset Email</Text>
+          <Button onPress={this.sendPasswordResetEmail}>RESET PASSWORD</Button>
         </View>
-        <TextInput
-          placeholder="Email Address"
-          keyboardType="email-address"
-          value={this.state.email}
-          onChangeText={email => this.setState({ email })}
-        />
-        <Button onPress={this.sendPasswordResetEmail}>RESET PASSWORD</Button>
-        <Spinner visible={this.state.isLoading} />
-      </View>
+      </Wrapper>
     );
   }
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1.2,
+    flex: 1,
     justifyContent: 'flex-start',
     backgroundColor: '#16a085',
     padding: 20,
     paddingTop: 100,
   },
-  logoContainer: {
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-  subtext: {
-    color: '#ffffff',
-    fontSize: 25,
-    marginTop: 10,
-    textAlign: 'center',
-    opacity: 0.8,
-  },
-  input: {
-    height: 40,
-    marginBottom: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    color: '#fff',
-    paddingHorizontal: 10,
-  },
-  buttonContainer: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingVertical: 15,
-  },
-  buttonText: {
-    textAlign: 'center',
-    color: '#FFF',
-    fontWeight: '700',
+  iconTitleSet: {
+    marginBottom: 20,
   },
 });
