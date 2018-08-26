@@ -12,40 +12,17 @@ import IconTitleSet from 'shared/IconTitleSet';
 import Wrapper from 'screens/Wrapper';
 
 import firebase from 'config/firebase';
-import api from 'api';
 import validateForm from 'helpers/validation';
 
 
 export default class Register extends Component {
-  static navigationOptions = {
-    headerRight: null,
+  state = {
+    email: '',
+    name: '',
+    password: '',
+    passwordConfirmation: '',
+    isLoading: false,
   };
-
-  constructor(props) {
-    super(props);
-    this.state = {
-      email: '',
-      name: '',
-      password: '',
-      passwordConfirmation: '',
-      isLoading: false,
-    };
-    // firebase.auth().onAuthStateChanged((user) => {
-    //   if (user) {
-    //     api.dbRef
-    //       .child('users')
-    //       .push({
-    //         email: user.email,
-    //         uid: user.uid,
-    //         name: this.state.name,
-    //       });
-    //     this.props.navigation.navigate('MainMenu');
-    //     this.setState({
-    //       isLoading: false,
-    //     });
-    //   }
-    // });
-  }
 
   runValidation = () => {
     const {
@@ -198,8 +175,6 @@ export default class Register extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#16a085',
-    padding: 20,
   },
   iconTitleSet: {
     marginBottom: 20,

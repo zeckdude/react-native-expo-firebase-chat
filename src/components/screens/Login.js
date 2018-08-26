@@ -22,22 +22,11 @@ export default class Login extends Component {
     header: null,
   };
 
-  constructor() {
-    super();
-    this.state = {
-      email: '',
-      password: '',
-      isLoading: false,
-    };
-    // firebase.auth().onAuthStateChanged((user) => {
-    //   if (user) {
-    //     this.props.navigation.navigate('MainMenu');
-    //     this.setState({
-    //       isLoading: false,
-    //     });
-    //   }
-    // });
-  }
+  state = {
+    email: '',
+    password: '',
+    isLoading: false,
+  };
 
   componentDidMount() {
     const messageProps = get(this.props, 'navigation.state.params.messageProps');
@@ -170,8 +159,6 @@ export default class Login extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#16a085',
-    padding: 20,
     paddingTop: 60,
   },
   iconTitleSet: {

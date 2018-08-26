@@ -47,7 +47,7 @@ export const SignedOutStack = StackNavigator(
         backgroundColor: '#ffffff',
         elevation: null,
       },
-      headerTintColor: '#4A9D86',
+      headerTintColor: '#16a085',
       headerTitleStyle: {
         fontWeight: 'bold',
       },
@@ -85,10 +85,12 @@ export const SignedInStack = StackNavigator(
   {
     navigationOptions: ({ navigation }) => ({
       headerStyle: {
-        backgroundColor: '#16a085',
+        backgroundColor: '#ffffff',
         elevation: null,
+        paddingLeft: 10,
+        paddingRight: 10,
       },
-      headerTintColor: '#fff',
+      headerTintColor: '#16a085',
       headerTitleStyle: {
         fontWeight: 'bold',
       },
@@ -96,7 +98,7 @@ export const SignedInStack = StackNavigator(
         <Button
           primary
           title="Logout"
-          color="#ffffff"
+          color="#16a085"
           onPress={() => {
             api.signOutFirebase()
               .then(

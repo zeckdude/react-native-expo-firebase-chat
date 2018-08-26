@@ -14,17 +14,10 @@ import api from 'api';
 import validateForm from 'helpers/validation';
 
 export default class ResetPassword extends Component {
-  static navigationOptions = {
-    headerRight: null,
+  state = {
+    email: '',
+    isLoading: false,
   };
-
-  constructor() {
-    super();
-    this.state = {
-      email: '',
-      isLoading: false,
-    };
-  }
 
   runValidation = () => {
     const { email } = this.state;
@@ -120,10 +113,7 @@ export default class ResetPassword extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
-    backgroundColor: '#16a085',
-    padding: 20,
-    paddingTop: 100,
+    paddingTop: 80,
   },
   iconTitleSet: {
     marginBottom: 20,
