@@ -77,7 +77,7 @@ class API {
     }
   }
 
-  signOut() {
+  signOutFirebase() {
     return firebase.auth().signOut();
   }
 

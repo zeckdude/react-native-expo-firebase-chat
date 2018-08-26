@@ -30,21 +30,21 @@ export default class Register extends Component {
       passwordConfirmation: '',
       isLoading: false,
     };
-    firebase.auth().onAuthStateChanged((user) => {
-      if (user) {
-        api.dbRef
-          .child('users')
-          .push({
-            email: user.email,
-            uid: user.uid,
-            name: this.state.name,
-          });
-        this.props.navigation.navigate('MainMenu');
-        this.setState({
-          isLoading: false,
-        });
-      }
-    });
+    // firebase.auth().onAuthStateChanged((user) => {
+    //   if (user) {
+    //     api.dbRef
+    //       .child('users')
+    //       .push({
+    //         email: user.email,
+    //         uid: user.uid,
+    //         name: this.state.name,
+    //       });
+    //     this.props.navigation.navigate('MainMenu');
+    //     this.setState({
+    //       isLoading: false,
+    //     });
+    //   }
+    // });
   }
 
   runValidation = () => {

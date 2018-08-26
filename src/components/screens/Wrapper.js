@@ -4,7 +4,7 @@ import Spinner from 'react-native-loading-spinner-overlay';
 
 const Wrapper = ({ children, isLoading }) => (
   <View style={{ flex: 1 }}>
-    <StatusBar barStyle="light-content" backgroundColor="#16a085" />
+    <StatusBar barStyle="dark-content" backgroundColor="#16a085" />
     {children}
     <Spinner visible={isLoading} />
   </View>

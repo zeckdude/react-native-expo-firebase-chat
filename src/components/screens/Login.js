@@ -3,6 +3,7 @@ import {
   KeyboardAvoidingView,
   StyleSheet,
   View,
+  StatusBar,
 } from 'react-native';
 
 import { showMessage } from 'react-native-flash-message';
@@ -12,8 +13,9 @@ import IconTitleSet from 'shared/IconTitleSet';
 import validateForm from 'helpers/validation';
 import Wrapper from 'screens/Wrapper';
 import { get } from 'lodash';
-
 import firebase from 'config/firebase';
+import { signInApp } from '../../auth';
+
 
 export default class Login extends Component {
   static navigationOptions = {
@@ -27,14 +29,14 @@ export default class Login extends Component {
       password: '',
       isLoading: false,
     };
-    firebase.auth().onAuthStateChanged((user) => {
-      if (user) {
-        this.props.navigation.navigate('MainMenu');
-        this.setState({
-          isLoading: false,
-        });
-      }
-    });
+    // firebase.auth().onAuthStateChanged((user) => {
+    //   if (user) {
+    //     this.props.navigation.navigate('MainMenu');
+    //     this.setState({
+    //       isLoading: false,
+    //     });
+    //   }
+    // });
   }
 
   componentDidMount() {
@@ -107,6 +109,7 @@ export default class Login extends Component {
       .signInWithEmailAndPassword(email, password)
       .then(() => {
         this.setState({ isLoading: false });
+        signInApp().then(() => this.props.navigation.navigate('SignedInStack'));
       })
       .catch((error) => {
         showMessage({
@@ -123,6 +126,7 @@ export default class Login extends Component {
   render() {
     return (
       <Wrapper isLoading={this.state.isLoading}>
+        <StatusBar barStyle="light-content" backgroundColor="#16a085" />
         <View style={styles.container}>
           <IconTitleSet
             iconName="chat"

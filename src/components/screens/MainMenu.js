@@ -10,7 +10,7 @@ import {
 
 import api from 'api';
 import IconTitleSet from 'shared/IconTitleSet';
-// import { snapshotToArray } from 'helpers';
+import { signOutApp } from '../../auth';
 
 export default class MainMenu extends Component {
   render() {
@@ -47,10 +47,10 @@ export default class MainMenu extends Component {
           primary
           title="Logout"
           onPress={() => {
-            api.signOut()
+            api.signOutFirebase()
               .then(
                 () => {
-                  this.props.navigation.navigate('Login');
+                  signOutApp().then(() => this.props.navigation.navigate('SignedOutStack'));
                 },
                 (error) => {
                   throw error;
