@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import {
-  AppRegistry,
   StyleSheet,
   Text,
   View,
@@ -10,45 +9,22 @@ import {
 } from 'react-native';
 
 import api from 'api';
+import IconTitleSet from 'shared/IconTitleSet';
 // import { snapshotToArray } from 'helpers';
 
 export default class MainMenu extends Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      name: 'Duuuude',
-    };
-
-    // const user = firebase.auth().currentUser;
-    //  self = this;
-    // debugger;
-
-    // firebase
-    //   .database()
-    //   .ref()
-    //   .child('users/')
-    //   .orderByChild("uid")
-    //   .equalTo(user.uid)
-    //   .once('value')
-    //   .then(function(snapshot) {
-    //     const userData = snapshotToArray(snapshot);
-    //     console.log(userData);
-    //     self.setState({
-    //       name: userData[0].name
-    //     });
-    //   });
-  }
-
   render() {
     return (
       <View style={styles.containerl}>
         <StatusBar barStyle="light-content" backgroundColor="#00796B" />
-        <Text style={styles.title}>
-Welcome
-          {this.state.name}
-!
-        </Text>
+        <IconTitleSet
+          iconName="chat"
+          iconSize={100}
+          iconColor="#bdede3"
+          style={styles.iconTitleSet}
+        >
+          Welcome
+        </IconTitleSet>
         <TouchableOpacity>
           <Text
             style={styles.buttonStyle}
@@ -64,7 +40,7 @@ Welcome
             style={styles.buttonStyle}
             onPress={() => this.props.navigation.navigate('UserList')}
           >
-            User List
+            Contacts
           </Text>
         </TouchableOpacity>
         <Button
@@ -105,9 +81,11 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     margin: 20,
   },
-  containerl: {
+  container: {
     flex: 1,
+    justifyContent: 'flex-start',
+    backgroundColor: '#ffffff',
+    padding: 20,
+    paddingTop: 80,
   },
 });
-
-AppRegistry.registerComponent('MainMenu', () => MainMenu);

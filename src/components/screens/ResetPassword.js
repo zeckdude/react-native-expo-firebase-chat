@@ -14,6 +14,10 @@ import api from 'api';
 import validateForm from 'helpers/validation';
 
 export default class ResetPassword extends Component {
+  static navigationOptions = {
+    headerRight: null,
+  };
+
   constructor() {
     super();
     this.state = {

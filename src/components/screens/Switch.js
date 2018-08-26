@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import firebase from 'config/firebase';
+import api from 'api';
 
 import Login from './Login';
 import MainMenu from './MainMenu';
@@ -33,5 +34,9 @@ export default class Switch extends Component {
       return <Login navigation={this.props.navigation} />;
     }
     return <MainMenu navigation={this.props.navigation} />;
+    // if (!this.state.authenticated) {
+    //   return this.props.navigation.navigate('Login');
+    // }
+    // return this.props.navigation.navigate('MainMenu');
   }
 }

@@ -17,6 +17,10 @@ import validateForm from 'helpers/validation';
 
 
 export default class Register extends Component {
+  static navigationOptions = {
+    headerRight: null,
+  };
+
   constructor(props) {
     super(props);
     this.state = {
