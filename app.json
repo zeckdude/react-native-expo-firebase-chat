@@ -1,5 +1,11 @@
 {
   "expo": {
-    "sdkVersion": "27.0.0"
+    "name": "React Native Expo Firebase Chat",
+    "slug": "react-native-expo-firebase-chat",
+    "sdkVersion": "27.0.0",
+    "orientation": "portrait",
+    "splash": {
+      "image": "./img/splash.png"
+    }
   }
 }
