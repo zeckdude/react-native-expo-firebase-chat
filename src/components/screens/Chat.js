@@ -10,38 +10,46 @@ export default class Chat extends Component {
     };
 
     this.user = api.currentUser;
-    const { uid } = this.props.navigation.state;
+    console.log(this.user);
+    const { uid } = this.props.navigation.state.params;
+
+    console.log(this.generateChatId(uid));
+    // debugger;
 
     this.chatRef = api.dbRef.child(`chat/${this.generateChatId(uid)}`);
     this.chatRefData = this.chatRef.orderByChild('order');
-    this.onSend = this.onSend.bind(this);
   }
 
   componentDidMount() {
-    this.listenForItems(this.chatRefData);
+    this.liveUpdateMessages(this.chatRefData);
   }
 
   componentWillUnmount() {
     this.chatRefData.off();
   }
 
-  onSend = (messages = []) => {
-    // this.setState({
-    //     messages: GiftedChat.append(this.state.messages, messages),
-    // });
-    messages.forEach((message) => {
-      const now = new Date().getTime();
-      this.chatRef.push({
-        _id: now,
-        text: message.text,
-        createdAt: now,
-        uid: this.user.uid,
-        order: -1 * now,
-      });
+  /**
+   * Firebase command to add the message to the messages property for the chat
+   * @param  {Array}  [messages [Array of messages that are sent when the user hits Send (Not sure why its an array when it just sends one message anyways)]
+   * @return {void}
+   */
+  onSend = (messages) => {
+    const now = new Date().getTime();
+    this.chatRef.push({
+      _id: now,
+      text: messages[0].text,
+      createdAt: now,
+      uid: this.user.uid,
+      order: -1 * now,
     });
   }
 
-  listenForItems = (chatRef) => {
+  /**
+   * Firebase socket connection that will run every time a message is added/removed from the messages property for the chat
+   * @param  {[type]} chatRef [description]
+   * @return {[type]}         [description]
+   */
+  liveUpdateMessages = (chatRef) => {
     chatRef.on('value', (snap) => {
       // get children as an array
       const items = [];

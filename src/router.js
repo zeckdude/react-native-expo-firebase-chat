@@ -60,7 +60,7 @@ export const SignedInStack = StackNavigator(
     MainMenu: {
       screen: MainMenu,
       navigationOptions: {
-        title: 'Main Menu',
+        title: 'Menu',
       },
     },
     GlobalChat: {
@@ -72,7 +72,7 @@ export const SignedInStack = StackNavigator(
     UserList: {
       screen: UserList,
       navigationOptions: {
-        title: 'User List',
+        title: 'Contacts',
       },
     },
     Chat: {

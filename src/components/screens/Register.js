@@ -105,9 +105,17 @@ export default class Register extends Component {
     firebase
       .auth()
       .createUserWithEmailAndPassword(email, password)
-      .then(() => {
-        this.props.navigation.navigate('MainMenu');
+      .then(({ user }) => {
+        // Add the new user to the users table
+        firebase.database().ref()
+          .child('users')
+          .push({
+            email: user.email,
+            uid: user.uid,
+            name: this.state.name,
+          });
         this.setState({ isLoading: false });
+        return this.props.navigation.navigate('MainMenu');
       })
       .catch((error) => {
         showMessage({

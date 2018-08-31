@@ -3,71 +3,51 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   FlatList,
   Image,
-  Button,
 } from 'react-native';
 
-import Spinner from 'react-native-loading-spinner-overlay';
 import api from 'api';
+import firebase from 'config/firebase';
+import Wrapper from 'screens/Wrapper';
+import IconTitleSet from 'shared/IconTitleSet';
+import Button from 'shared/Button';
+import { getGravatarSrc } from 'helpers';
 
 export default class UsersList extends Component {
-  static navigationOptions = {
-    headerRight: (
-      <Button
-        primary
-        title="Logout"
-        onPress={() => {
-          api.signOut()
-            .then(
-              () => {
-                this.props.navigation.navigate('Login');
-              },
-              (error) => {
-                // An error happened.
-              },
-            );
-        }}
-      >
-        Log out
-      </Button>
-    ),
-  };
-
   state = {
     users: [],
-    loading: true,
+    isLoading: true,
   };
 
-  constructor(props) {
-    super(props);
-    this.usersRef = api.dbRef.child('users');
-  }
-
   componentDidMount() {
-    this.listenForItems(this.usersRef);
+    firebase.auth().onAuthStateChanged((currentUser) => {
+      if (currentUser) {
+        this.listenForItems(currentUser);
+      }
+    });
   }
 
-  listenForItems = (usersRef) => {
-    const user = api.currentUser;
+  listenForItems = (currentUser) => {
+    const allUsers = api.dbRef.child('users');
 
-    usersRef.on('value', (snap) => {
+    allUsers.on('value', (snap) => {
       // get children as an array
       const users = [];
-      snap.forEach((child) => {
-        if (child.val().email != user.email) {
+      snap.forEach((userSnapshot) => {
+        const user = userSnapshot.val();
+        if (user.email !== currentUser.email) {
           users.push({
-            name: child.val().name,
-            uid: child.val().uid,
-            email: child.val().email,
+            name: user.name,
+            uid: user.uid,
+            email: user.email,
           });
         }
       });
 
       this.setState({
         users,
-        loading: false,
+        isLoading: false,
       });
     });
   }
@@ -75,81 +55,73 @@ export default class UsersList extends Component {
   renderRow = ({ item }) => {
     const { name, email, uid } = item;
     return (
-      <TouchableOpacity
-        onPress={() => {
-          this.props.navigation.navigate('Chat', {
-            name,
-            email,
-            uid,
-          });
-        }}
+      <Button
+        onPress={() => this.props.navigation.navigate('Chat', {
+          name,
+          email,
+          uid,
+        })}
+        style={styles.userButton}
       >
         <View style={styles.profileContainer}>
           <Image
             source={{
-              uri: 'https://www.gravatar.com/avatar/',
+              uri: getGravatarSrc(email),
             }}
             style={styles.profileImage}
           />
           <Text style={styles.profileName}>{name}</Text>
         </View>
-      </TouchableOpacity>
+      </Button>
     );
   };
 
   render() {
     return (
-      <View style={styles.container}>
-        <View style={styles.topGroup}>
-          <Text style={styles.user}>Users</Text>
+      <Wrapper isLoading={this.state.isLoading}>
+        <View style={styles.container}>
+          <IconTitleSet
+            iconName="users"
+            iconType="font-awesome"
+            style={styles.iconTitleSet}
+          >
+            Contacts
+          </IconTitleSet>
+          <FlatList
+            data={this.state.users}
+            renderItem={this.renderRow}
+            keyExtractor={user => user.uid}
+            style={{ flex: 1 }}
+          />
         </View>
-        <FlatList
-          data={this.state.users}
-          renderItem={this.renderRow}
-        />
-        <Spinner visible={this.state.loading} />
-      </View>
+      </Wrapper>
     );
   }
 }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'stretch',
-    marginRight: 10,
-    marginLeft: 10,
   },
-  rightButton: {
-    marginTop: 10,
-    marginLeft: 5,
-    marginRight: 10,
-    padding: 0,
+  iconTitleSet: {
+    marginBottom: 20,
   },
-  topGroup: {
-    flexDirection: 'row',
-    margin: 10,
-  },
-  users: {
-    flex: 1,
-    color: '#3A5BB1',
-    fontSize: 16,
-    padding: 5,
+  userButton: {
+    marginBottom: 10,
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    marginLeft: 6,
-    marginBottom: 8,
+    marginBottom: -5,
   },
   profileImage: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    marginLeft: 6,
   },
   profileName: {
     marginLeft: 6,
-    fontSize: 16,
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: '700',
   },
 });
