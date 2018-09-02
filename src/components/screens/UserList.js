@@ -21,6 +21,7 @@ export default class UsersList extends Component {
   };
 
   componentDidMount() {
+    console.log('yoooo');
     firebase.auth().onAuthStateChanged((currentUser) => {
       if (currentUser) {
         this.listenForItems(currentUser);
@@ -44,6 +45,8 @@ export default class UsersList extends Component {
           });
         }
       });
+
+      console.log('hiiii');
 
       this.setState({
         users,

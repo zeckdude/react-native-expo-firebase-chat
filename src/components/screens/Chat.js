@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { GiftedChat } from 'react-native-gifted-chat';
 import api from 'api';
+import { snapshotToArray } from 'helpers';
+import firebase from 'config/firebase';
 
 export default class Chat extends Component {
   constructor(props) {
@@ -10,22 +12,72 @@ export default class Chat extends Component {
     };
 
     this.user = api.currentUser;
-    console.log(this.user);
-    const { uid } = this.props.navigation.state.params;
-
-    console.log(this.generateChatId(uid));
-    // debugger;
-
-    this.chatRef = api.dbRef.child(`chat/${this.generateChatId(uid)}`);
-    this.chatRefData = this.chatRef.orderByChild('order');
+    this.selectedUserId = this.props.navigation.state.params.uid;
   }
 
-  componentDidMount() {
-    this.liveUpdateMessages(this.chatRefData);
+  async componentDidMount() {
+    // Get reference to the chat conversation or create a new chat reference
+    this.chatRef = await this.getChatRef();
+
+    // Save the existing messages into state and update them if a message is added/removed from the DB
+    this.liveUpdateMessages(this.chatRef.orderByChild('order'));
   }
 
   componentWillUnmount() {
-    this.chatRefData.off();
+    // Remove all event listeners on reference
+    this.chatRef.off();
+  }
+
+  onceGetUserRooms = userId => api.dbRef.child(`userRooms/${userId}`).once('value');
+
+  getChatRef = async () => {
+    // Get the chat room id based on the current user and the selected user
+    let chatRoomId = await this.getChatRoomId();
+
+    // If there is no existing chat room, then create a new push key to make a reference to
+    // Otherwise, use the found chat room id
+    if (!chatRoomId) {
+      chatRoomId = api.dbRef.child('chat').push().key;
+      console.log('chatRoomId', chatRoomId);
+
+      // Save this chat to the userRooms collection for both users
+      const userRoomsRef = api.dbRef.child('userRooms');
+      userRoomsRef.update({
+        [this.user.uid]: {
+          [userRoomsRef.push().key]: chatRoomId,
+        },
+        [this.selectedUserId]: {
+          [userRoomsRef.push().key]: chatRoomId,
+        },
+      });
+
+      // Save the users for this chat to the roomUsers collection
+      const roomUsersRef = api.dbRef.child(`roomUsers/${chatRoomId}`);
+      roomUsersRef.update({
+        [roomUsersRef.push().key]: this.user.uid,
+        [roomUsersRef.push().key]: this.selectedUserId,
+      });
+    }
+
+    return api.dbRef.child(`chat/${chatRoomId}`);
+  }
+
+  getChatRoomId = async () => {
+    // Get the rooms for the current user (userRooms)
+    const currentUserRoomsSnapshot = await this.onceGetUserRooms(this.user.uid);
+    const currentUserRooms = snapshotToArray(currentUserRoomsSnapshot);
+    console.log('currentUserRooms', currentUserRooms);
+
+    // Get the rooms for the user selected to chat with (userRooms)
+    const selectedUserRoomsSnapshot = await this.onceGetUserRooms(this.selectedUserId);
+    const selectedUserRooms = snapshotToArray(selectedUserRoomsSnapshot);
+    console.log('selectedUserRooms', selectedUserRooms);
+
+    // Get the rooms they are both in together
+    const matchingRooms = currentUserRooms.filter(currentUserRoom => selectedUserRooms.includes(currentUserRoom));
+    console.log('matchingRooms', matchingRooms);
+
+    return matchingRooms[0];
   }
 
   /**
@@ -35,13 +87,14 @@ export default class Chat extends Component {
    */
   onSend = (messages) => {
     const now = new Date().getTime();
-    this.chatRef.push({
+    const messageValues = {
       _id: now,
       text: messages[0].text,
       createdAt: now,
       uid: this.user.uid,
       order: -1 * now,
-    });
+    };
+    this.chatRef.push(messageValues);
   }
 
   /**
@@ -50,33 +103,24 @@ export default class Chat extends Component {
    * @return {[type]}         [description]
    */
   liveUpdateMessages = (chatRef) => {
-    chatRef.on('value', (snap) => {
+    chatRef.on('value', (messagesSnapshot) => {
       // get children as an array
-      const items = [];
-      snap.forEach((child) => {
-        items.push({
-          _id: child.val().createdAt,
-          text: child.val().text,
-          createdAt: new Date(child.val().createdAt),
-          user: {
-            _id: child.val().uid,
-          },
-        });
-      });
+
+      // Get all messages and re-map the array to a format that works for Gifted Chat component
+      let messages = snapshotToArray(messagesSnapshot);
+      messages = snapshotToArray(messagesSnapshot).map(message => ({
+        _id: message.createdAt,
+        text: message.text,
+        createdAt: new Date(message.createdAt),
+        user: {
+          _id: message.uid,
+        },
+      }));
 
       this.setState({
-        messages: items,
+        messages,
       });
     });
-  }
-
-  // generate ChatId works cause when you are the user sending
-  // chat you take user.uid and your user takes uid
-  // when your user is using the app to send message s/he takes
-  // user.uid and you take the uid cause you are the user
-  generateChatId = (uid) => {
-    if (this.user.uid > uid) return `${this.user.uid}-${uid}`;
-    return `${uid}-${this.user.uid}`;
   }
 
   render() {
