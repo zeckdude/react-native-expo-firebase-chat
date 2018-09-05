@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { GiftedChat } from 'react-native-gifted-chat';
 import api from 'api';
 import { snapshotToArray } from 'helpers';
@@ -9,18 +10,35 @@ export default class Chat extends Component {
     super(props);
     this.state = {
       messages: [],
+      isNewChat: false,
+      numMessagesToShow: 5,
     };
 
     this.user = api.currentUser;
-    this.selectedUserId = this.props.navigation.state.params.uid;
+    this.selectedUser = this.props.navigation.state.params.selectedUser;
+
+    console.log('this.user', this.user);
+    console.log('this.selectedUser', this.selectedUser);
   }
 
   async componentDidMount() {
     // Get reference to the chat conversation or create a new chat reference
     this.chatRef = await this.getChatRef();
 
+    // Track the messages count
+    this.liveUpdateMessagesCount();
+
     // Save the existing messages into state and update them if a message is added/removed from the DB
-    this.liveUpdateMessages(this.chatRef.orderByChild('order'));
+    // this.liveUpdateListener = this.liveUpdateMessages(this.chatRef.orderByChild('createdAt').limitToLast(this.state.numMessagesToShow));
+    this.liveUpdateListener = this.liveUpdateMessages(this.chatRef.child('messages').limitToLast(this.state.numMessagesToShow));
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    // If the number of messages to show has changed, remove the old listener and run the event listener again
+    if (prevState.numMessagesToShow !== this.state.numMessagesToShow) {
+      this.chatRef.off(this.liveUpdateListener);
+      this.liveUpdateMessages(this.chatRef.child('messages').limitToLast(this.state.numMessagesToShow));
+    }
   }
 
   componentWillUnmount() {
@@ -34,32 +52,70 @@ export default class Chat extends Component {
     // Get the chat room id based on the current user and the selected user
     let chatRoomId = await this.getChatRoomId();
 
-    // If there is no existing chat room, then create a new push key to make a reference to
-    // Otherwise, use the found chat room id
     if (!chatRoomId) {
       chatRoomId = api.dbRef.child('chat').push().key;
-      console.log('chatRoomId', chatRoomId);
-
-      // Save this chat to the userRooms collection for both users
-      const userRoomsRef = api.dbRef.child('userRooms');
-      userRoomsRef.update({
-        [this.user.uid]: {
-          [userRoomsRef.push().key]: chatRoomId,
-        },
-        [this.selectedUserId]: {
-          [userRoomsRef.push().key]: chatRoomId,
-        },
-      });
-
-      // Save the users for this chat to the roomUsers collection
-      const roomUsersRef = api.dbRef.child(`roomUsers/${chatRoomId}`);
-      roomUsersRef.update({
-        [roomUsersRef.push().key]: this.user.uid,
-        [roomUsersRef.push().key]: this.selectedUserId,
+      this.setState({
+        isNewChat: true,
       });
     }
 
+    console.log('chatRoomId', chatRoomId);
     return api.dbRef.child(`chat/${chatRoomId}`);
+  }
+
+  incrementNumMessagesToShow = (numIncrement) => {
+    // debugger;
+    this.setState(prevState => ({
+      numMessagesToShow: prevState.numMessagesToShow + numIncrement,
+    }));
+  }
+
+  /**
+   * Save this chat to the userRooms collection for both users
+   */
+  setUsersRoom = (chatRoomId) => {
+    const userRoomsRef = api.dbRef.child('userRooms');
+    userRoomsRef.update({
+      [this.user.uid]: {
+        [userRoomsRef.push().key]: chatRoomId,
+      },
+      [this.selectedUser.uid]: {
+        [userRoomsRef.push().key]: chatRoomId,
+      },
+    });
+  }
+
+  /**
+   * Save the users for this chat to the roomUsers collection
+   */
+  setRoomUsers = (chatRoomId) => {
+    const roomUsersRef = api.dbRef.child(`roomUsers/${chatRoomId}`);
+    roomUsersRef.update({
+      [roomUsersRef.push().key]: this.user.uid,
+      [roomUsersRef.push().key]: this.selectedUser.uid,
+    });
+  }
+
+  /**
+   * If this is the first message for a room, then save the following data:
+   * Save users to the roomUsers collection for this room
+   * Save the room to the userRooms collection for each of the users in the room
+   * @return {void}
+   */
+  createRoomData = () => {
+    if (this.state.isNewChat) {
+      this.setRoomUsers(this.chatRef.key);
+      this.setUsersRoom(this.chatRef.key);
+
+      this.setState({
+        isNewChat: false,
+      });
+    }
+  }
+
+  incrementMessageCount = () => {
+    const messagesCountRef = this.chatRef.child('numMessages');
+    messagesCountRef.transaction(currentNumMessages => (currentNumMessages || 0) + 1);
   }
 
   getChatRoomId = async () => {
@@ -69,7 +125,7 @@ export default class Chat extends Component {
     console.log('currentUserRooms', currentUserRooms);
 
     // Get the rooms for the user selected to chat with (userRooms)
-    const selectedUserRoomsSnapshot = await this.onceGetUserRooms(this.selectedUserId);
+    const selectedUserRoomsSnapshot = await this.onceGetUserRooms(this.selectedUser.uid);
     const selectedUserRooms = snapshotToArray(selectedUserRoomsSnapshot);
     console.log('selectedUserRooms', selectedUserRooms);
 
@@ -82,19 +138,25 @@ export default class Chat extends Component {
 
   /**
    * Firebase command to add the message to the messages property for the chat
-   * @param  {Array}  [messages [Array of messages that are sent when the user hits Send (Not sure why its an array when it just sends one message anyways)]
+   * @param  {Array}  messages [Array of messages that are sent when the user hits Send (Not sure why its an array when it just sends one message anyways)]
    * @return {void}
    */
   onSend = (messages) => {
+    // If this is the first message in a new room, save the information about the users in the room
+    this.createRoomData();
+
+    //  Increment the messages count. It's important to keep this saved so the count is known without having to get all documents in the collection.
+    this.incrementMessageCount();
+
+    this.incrementNumMessagesToShow(1);
+
     const now = new Date().getTime();
     const messageValues = {
-      _id: now,
       text: messages[0].text,
       createdAt: now,
       uid: this.user.uid,
-      order: -1 * now,
     };
-    this.chatRef.push(messageValues);
+    this.chatRef.child('messages').push(messageValues);
   }
 
   /**
@@ -102,10 +164,19 @@ export default class Chat extends Component {
    * @param  {[type]} chatRef [description]
    * @return {[type]}         [description]
    */
-  liveUpdateMessages = (chatRef) => {
-    chatRef.on('value', (messagesSnapshot) => {
-      // get children as an array
+  liveUpdateMessages = (messagesRef) => {
+    const roomUsersInfo = {
+      [this.user.uid]: {
+        name: this.user.displayName,
+        photoURL: this.user.photoURL,
+      },
+      [this.selectedUser.uid]: {
+        name: this.selectedUser.name,
+        photoURL: this.selectedUser.photoURL,
+      },
+    };
 
+    messagesRef.on('value', (messagesSnapshot) => {
       // Get all messages and re-map the array to a format that works for Gifted Chat component
       let messages = snapshotToArray(messagesSnapshot);
       messages = snapshotToArray(messagesSnapshot).map(message => ({
@@ -114,33 +185,50 @@ export default class Chat extends Component {
         createdAt: new Date(message.createdAt),
         user: {
           _id: message.uid,
+          name: roomUsersInfo[message.uid].name,
+          avatar: roomUsersInfo[message.uid].photoURL,
         },
       }));
 
       this.setState({
-        messages,
+        messages: messages.reverse(),
+      });
+    });
+  }
+
+  liveUpdateMessagesCount = () => {
+    this.chatRef.child('numMessages').on('value', (numMessagesSnapshot) => {
+      console.log(numMessagesSnapshot.val());
+      this.setState({
+        numMessages: numMessagesSnapshot.val(),
       });
     });
   }
 
   render() {
+    const { numMessages, messages } = this.state;
+    // debugger;
     return (
-      <GiftedChat
-        messages={this.state.messages}
-        onSend={this.onSend}
-        user={{
-          _id: this.user.uid,
-        }}
-      />
+      <View style={styles.container}>
+        <GiftedChat
+          messages={messages}
+          onSend={this.onSend}
+          onLoadEarlier={() => this.incrementNumMessagesToShow(5)}
+          user={{
+            _id: this.user.uid,
+            name: this.user.displayName,
+            avatar: this.user.photoURL,
+          }}
+          loadEarlier={numMessages > messages.length}
+        />
+      </View>
     );
   }
 }
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     alignItems: 'stretch',
-//     marginRight: 10,
-//     marginLeft: 10,
-//   },
-// });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+});

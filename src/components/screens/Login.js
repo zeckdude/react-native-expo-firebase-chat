@@ -16,7 +16,6 @@ import { get } from 'lodash';
 import firebase from 'config/firebase';
 import { signInApp } from '../../auth';
 
-
 export default class Login extends Component {
   static navigationOptions = {
     header: null,

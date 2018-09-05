@@ -24,12 +24,12 @@ export default class UsersList extends Component {
     console.log('yoooo');
     firebase.auth().onAuthStateChanged((currentUser) => {
       if (currentUser) {
-        this.listenForItems(currentUser);
+        this.liveUpdateUsers(currentUser);
       }
     });
   }
 
-  listenForItems = (currentUser) => {
+  liveUpdateUsers = (currentUser) => {
     const allUsers = api.dbRef.child('users');
 
     allUsers.on('value', (snap) => {
@@ -37,16 +37,15 @@ export default class UsersList extends Component {
       const users = [];
       snap.forEach((userSnapshot) => {
         const user = userSnapshot.val();
+        console.log('userSnapshot.key', userSnapshot.key);
         if (user.email !== currentUser.email) {
           users.push({
             name: user.name,
-            uid: user.uid,
+            uid: userSnapshot.key,
             email: user.email,
           });
         }
       });
-
-      console.log('hiiii');
 
       this.setState({
         users,
@@ -60,9 +59,12 @@ export default class UsersList extends Component {
     return (
       <Button
         onPress={() => this.props.navigation.navigate('Chat', {
-          name,
-          email,
-          uid,
+          selectedUser: {
+            name,
+            email,
+            uid,
+            photoURL: getGravatarSrc(email),
+          },
         })}
         style={styles.userButton}
       >

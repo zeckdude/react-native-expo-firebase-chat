@@ -13,6 +13,7 @@ import Wrapper from 'screens/Wrapper';
 
 import firebase from 'config/firebase';
 import validateForm from 'helpers/validation';
+import { getGravatarSrc } from 'helpers';
 
 
 export default class Register extends Component {
@@ -110,10 +111,16 @@ export default class Register extends Component {
         firebase.database().ref()
           .child('users')
           .push({
-            email: user.email,
+            email: this.state.email,
             uid: user.uid,
             name: this.state.name,
           });
+
+        // Update the user's metadata on firebase
+        user.updateProfile({
+          displayName: this.state.name,
+          photoURL: getGravatarSrc(this.state.email),
+        });
         this.setState({ isLoading: false });
         return this.props.navigation.navigate('MainMenu');
       })
