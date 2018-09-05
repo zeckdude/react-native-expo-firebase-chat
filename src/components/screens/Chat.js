@@ -3,14 +3,13 @@ import { View, StyleSheet } from 'react-native';
 import { GiftedChat } from 'react-native-gifted-chat';
 import api from 'api';
 import { snapshotToArray } from 'helpers';
-import firebase from 'config/firebase';
 
-export default class Chat extends Component {
+export default class ChatRoom extends Component {
   constructor(props) {
     super(props);
     this.state = {
       messages: [],
-      isNewChat: false,
+      isNewChatRoom: false,
       numMessagesToShow: 5,
     };
 
@@ -22,45 +21,44 @@ export default class Chat extends Component {
   }
 
   async componentDidMount() {
-    // Get reference to the chat conversation or create a new chat reference
-    this.chatRef = await this.getChatRef();
+    // Get reference to the chat room conversation or create a new chat room reference
+    this.chatRoomRef = await this.getChatRoomRef();
 
     // Track the messages count
     this.liveUpdateMessagesCount();
 
     // Save the existing messages into state and update them if a message is added/removed from the DB
-    // this.liveUpdateListener = this.liveUpdateMessages(this.chatRef.orderByChild('createdAt').limitToLast(this.state.numMessagesToShow));
-    this.liveUpdateListener = this.liveUpdateMessages(this.chatRef.child('messages').limitToLast(this.state.numMessagesToShow));
+    this.liveUpdateListener = this.liveUpdateMessages(this.chatRoomRef.child('messages').limitToLast(this.state.numMessagesToShow));
   }
 
   componentDidUpdate(prevProps, prevState) {
     // If the number of messages to show has changed, remove the old listener and run the event listener again
     if (prevState.numMessagesToShow !== this.state.numMessagesToShow) {
-      this.chatRef.off(this.liveUpdateListener);
-      this.liveUpdateMessages(this.chatRef.child('messages').limitToLast(this.state.numMessagesToShow));
+      this.chatRoomRef.off(this.liveUpdateListener);
+      this.liveUpdateMessages(this.chatRoomRef.child('messages').limitToLast(this.state.numMessagesToShow));
     }
   }
 
   componentWillUnmount() {
     // Remove all event listeners on reference
-    this.chatRef.off();
+    this.chatRoomRef.off();
   }
 
   onceGetUserRooms = userId => api.dbRef.child(`userRooms/${userId}`).once('value');
 
-  getChatRef = async () => {
+  getChatRoomRef = async () => {
     // Get the chat room id based on the current user and the selected user
     let chatRoomId = await this.getChatRoomId();
 
     if (!chatRoomId) {
-      chatRoomId = api.dbRef.child('chat').push().key;
+      chatRoomId = api.dbRef.child('chatRooms').push().key;
       this.setState({
-        isNewChat: true,
+        isNewChatRoom: true,
       });
     }
 
     console.log('chatRoomId', chatRoomId);
-    return api.dbRef.child(`chat/${chatRoomId}`);
+    return api.dbRef.child(`chatRooms/${chatRoomId}`);
   }
 
   incrementNumMessagesToShow = (numIncrement) => {
@@ -71,7 +69,7 @@ export default class Chat extends Component {
   }
 
   /**
-   * Save this chat to the userRooms collection for both users
+   * Save this chat room to the userRooms collection for both users
    */
   setUsersRoom = (chatRoomId) => {
     const userRoomsRef = api.dbRef.child('userRooms');
@@ -86,7 +84,7 @@ export default class Chat extends Component {
   }
 
   /**
-   * Save the users for this chat to the roomUsers collection
+   * Save the users for this chat room to the roomUsers collection
    */
   setRoomUsers = (chatRoomId) => {
     const roomUsersRef = api.dbRef.child(`roomUsers/${chatRoomId}`);
@@ -103,18 +101,18 @@ export default class Chat extends Component {
    * @return {void}
    */
   createRoomData = () => {
-    if (this.state.isNewChat) {
-      this.setRoomUsers(this.chatRef.key);
-      this.setUsersRoom(this.chatRef.key);
+    if (this.state.isNewChatRoom) {
+      this.setRoomUsers(this.chatRoomRef.key);
+      this.setUsersRoom(this.chatRoomRef.key);
 
       this.setState({
-        isNewChat: false,
+        isNewChatRoom: false,
       });
     }
   }
 
   incrementMessageCount = () => {
-    const messagesCountRef = this.chatRef.child('numMessages');
+    const messagesCountRef = this.chatRoomRef.child('numMessages');
     messagesCountRef.transaction(currentNumMessages => (currentNumMessages || 0) + 1);
   }
 
@@ -124,7 +122,7 @@ export default class Chat extends Component {
     const currentUserRooms = snapshotToArray(currentUserRoomsSnapshot);
     console.log('currentUserRooms', currentUserRooms);
 
-    // Get the rooms for the user selected to chat with (userRooms)
+    // Get the active rooms for the user(s) that are not the current user (userRooms)
     const selectedUserRoomsSnapshot = await this.onceGetUserRooms(this.selectedUser.uid);
     const selectedUserRooms = snapshotToArray(selectedUserRoomsSnapshot);
     console.log('selectedUserRooms', selectedUserRooms);
@@ -137,7 +135,7 @@ export default class Chat extends Component {
   }
 
   /**
-   * Firebase command to add the message to the messages property for the chat
+   * Firebase command to add the message to the messages property for the chat room
    * @param  {Array}  messages [Array of messages that are sent when the user hits Send (Not sure why its an array when it just sends one message anyways)]
    * @return {void}
    */
@@ -156,13 +154,13 @@ export default class Chat extends Component {
       createdAt: now,
       uid: this.user.uid,
     };
-    this.chatRef.child('messages').push(messageValues);
+    this.chatRoomRef.child('messages').push(messageValues);
   }
 
   /**
-   * Firebase socket connection that will run every time a message is added/removed from the messages property for the chat
-   * @param  {[type]} chatRef [description]
-   * @return {[type]}         [description]
+   * Firebase socket connection that will run every time a message is added/removed from the messages property for the chat room
+   * @param  {Array} messagesRef [Firebase reference to the messages for this chat room]
+   * @return {void}
    */
   liveUpdateMessages = (messagesRef) => {
     const roomUsersInfo = {
@@ -197,7 +195,7 @@ export default class Chat extends Component {
   }
 
   liveUpdateMessagesCount = () => {
-    this.chatRef.child('numMessages').on('value', (numMessagesSnapshot) => {
+    this.chatRoomRef.child('numMessages').on('value', (numMessagesSnapshot) => {
       console.log(numMessagesSnapshot.val());
       this.setState({
         numMessages: numMessagesSnapshot.val(),
