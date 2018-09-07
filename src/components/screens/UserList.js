@@ -12,7 +12,7 @@ import firebase from 'config/firebase';
 import Wrapper from 'screens/Wrapper';
 import IconTitleSet from 'shared/IconTitleSet';
 import Button from 'shared/Button';
-import { getGravatarSrc } from 'helpers';
+import { getGravatarSrc, snapshotToArray } from 'helpers';
 
 export default class UsersList extends Component {
   state = {
@@ -33,19 +33,13 @@ export default class UsersList extends Component {
     const allUsers = api.dbRef.child('users');
 
     allUsers.on('value', (snap) => {
-      // get children as an array
-      const users = [];
-      snap.forEach((userSnapshot) => {
-        const user = userSnapshot.val();
-        console.log('userSnapshot.key', userSnapshot.key);
-        if (user.email !== currentUser.email) {
-          users.push({
-            name: user.name,
-            uid: userSnapshot.key,
-            email: user.email,
-          });
-        }
-      });
+      const users = snapshotToArray(snap)
+        .filter(user => user.email !== currentUser.email)
+        .map(user => ({
+          name: user.name,
+          uid: user.id,
+          email: user.email,
+        }));
 
       this.setState({
         users,

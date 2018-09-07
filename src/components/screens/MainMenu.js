@@ -29,7 +29,7 @@ export default class MainMenu extends Component {
             })}
             style={styles.chatButton}
           >
-            Chat Room
+            Chat Rooms
           </Button>
           <Button
             onPress={() => this.props.navigation.navigate('UserList')}

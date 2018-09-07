@@ -10,7 +10,7 @@ export default class ChatRoom extends Component {
     this.state = {
       messages: [],
       isNewChatRoom: false,
-      numMessagesToShow: 5,
+      numMessagesToShow: 20,
     };
 
     this.user = api.currentUser;
@@ -116,6 +116,16 @@ export default class ChatRoom extends Component {
     messagesCountRef.transaction(currentNumMessages => (currentNumMessages || 0) + 1);
   }
 
+  // Identify the room as a personal chat room (one on one)
+  // TODO: When chat rooms for more than 2 people are implemented, this logic needs to be altered
+  setupChatRoom = () => {
+    if (this.state.isNewChatRoom) {
+      this.chatRoomRef.set({
+        isPersonal: true,
+      });
+    }
+  }
+
   getChatRoomId = async () => {
     // Get the rooms for the current user (userRooms)
     const currentUserRoomsSnapshot = await this.onceGetUserRooms(this.user.uid);
@@ -140,6 +150,9 @@ export default class ChatRoom extends Component {
    * @return {void}
    */
   onSend = (messages) => {
+    // Setup flag based on the number of people in this chat room
+    this.setupChatRoom();
+
     // If this is the first message in a new room, save the information about the users in the room
     this.createRoomData();
 
@@ -176,8 +189,7 @@ export default class ChatRoom extends Component {
 
     messagesRef.on('value', (messagesSnapshot) => {
       // Get all messages and re-map the array to a format that works for Gifted Chat component
-      let messages = snapshotToArray(messagesSnapshot);
-      messages = snapshotToArray(messagesSnapshot).map(message => ({
+      const messages = snapshotToArray(messagesSnapshot).map(message => ({
         _id: message.createdAt,
         text: message.text,
         createdAt: new Date(message.createdAt),
@@ -196,7 +208,6 @@ export default class ChatRoom extends Component {
 
   liveUpdateMessagesCount = () => {
     this.chatRoomRef.child('numMessages').on('value', (numMessagesSnapshot) => {
-      console.log(numMessagesSnapshot.val());
       this.setState({
         numMessages: numMessagesSnapshot.val(),
       });
@@ -211,7 +222,7 @@ export default class ChatRoom extends Component {
         <GiftedChat
           messages={messages}
           onSend={this.onSend}
-          onLoadEarlier={() => this.incrementNumMessagesToShow(5)}
+          onLoadEarlier={() => this.incrementNumMessagesToShow(20)}
           user={{
             _id: this.user.uid,
             name: this.user.displayName,
