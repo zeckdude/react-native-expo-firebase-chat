@@ -11,6 +11,8 @@ export default class ChatRoom extends Component {
       messages: [],
       isNewChatRoom: false,
       numMessagesToShow: 20,
+      numMessagesToIncrement: 20,
+      isLoadEarlierVisible: false,
     };
 
     this.user = api.currentUser;
@@ -24,9 +26,6 @@ export default class ChatRoom extends Component {
     // Get reference to the chat room conversation or create a new chat room reference
     this.chatRoomRef = await this.getChatRoomRef();
 
-    // Track the messages count
-    this.liveUpdateMessagesCount();
-
     // Save the existing messages into state and update them if a message is added/removed from the DB
     this.liveUpdateListener = this.liveUpdateMessages(this.chatRoomRef.child('messages').limitToLast(this.state.numMessagesToShow));
   }
@@ -36,6 +35,12 @@ export default class ChatRoom extends Component {
     if (prevState.numMessagesToShow !== this.state.numMessagesToShow) {
       this.chatRoomRef.off(this.liveUpdateListener);
       this.liveUpdateMessages(this.chatRoomRef.child('messages').limitToLast(this.state.numMessagesToShow));
+    }
+
+    // If the messages change, check if the number returned is equal to the number requested. If it is not,
+    // then that means there are no more messages coming after that and we can hide the `load earlier` button.
+    if (prevState.messages !== this.state.messages) {
+      this.toggleLoadEarlierButton(this.state.messages);
     }
   }
 
@@ -61,10 +66,9 @@ export default class ChatRoom extends Component {
     return api.dbRef.child(`chatRooms/${chatRoomId}`);
   }
 
-  incrementNumMessagesToShow = (numIncrement) => {
-    // debugger;
+  incrementNumMessagesToShow = (numMessagesToIncrement) => {
     this.setState(prevState => ({
-      numMessagesToShow: prevState.numMessagesToShow + numIncrement,
+      numMessagesToShow: prevState.numMessagesToShow + numMessagesToIncrement,
     }));
   }
 
@@ -109,11 +113,6 @@ export default class ChatRoom extends Component {
         isNewChatRoom: false,
       });
     }
-  }
-
-  incrementMessageCount = () => {
-    const messagesCountRef = this.chatRoomRef.child('numMessages');
-    messagesCountRef.transaction(currentNumMessages => (currentNumMessages || 0) + 1);
   }
 
   // Identify the room as a personal chat room (one on one)
@@ -171,6 +170,19 @@ export default class ChatRoom extends Component {
   }
 
   /**
+   * Hide the Load Earlier Visible Messages button if less messages are returned than are requested
+   * The number of messages being requested is always a set amount more than the last set, so if
+   * there are less than the number of requested messages, then that means there are no more to send.
+   * @param  {Array} messages [Chat messages]
+   * @return {void}
+   */
+  toggleLoadEarlierButton = (messages) => {
+    this.setState(prevState => ({
+      isLoadEarlierVisible: messages.length === prevState.numMessagesToShow,
+    }));
+  }
+
+  /**
    * Firebase socket connection that will run every time a message is added/removed from the messages property for the chat room
    * @param  {Array} messagesRef [Firebase reference to the messages for this chat room]
    * @return {void}
@@ -206,29 +218,20 @@ export default class ChatRoom extends Component {
     });
   }
 
-  liveUpdateMessagesCount = () => {
-    this.chatRoomRef.child('numMessages').on('value', (numMessagesSnapshot) => {
-      this.setState({
-        numMessages: numMessagesSnapshot.val(),
-      });
-    });
-  }
-
   render() {
-    const { numMessages, messages } = this.state;
-    // debugger;
+    const { isLoadEarlierVisible, messages } = this.state;
     return (
       <View style={styles.container}>
         <GiftedChat
           messages={messages}
           onSend={this.onSend}
-          onLoadEarlier={() => this.incrementNumMessagesToShow(20)}
+          onLoadEarlier={() => this.incrementNumMessagesToShow(this.state.numMessagesToIncrement)}
           user={{
             _id: this.user.uid,
             name: this.user.displayName,
             avatar: this.user.photoURL,
           }}
-          loadEarlier={numMessages > messages.length}
+          loadEarlier={isLoadEarlierVisible}
         />
       </View>
     );
