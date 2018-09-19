@@ -10,6 +10,10 @@ import Button from 'shared/Button';
 import Wrapper from 'screens/Wrapper';
 
 export default class MainMenu extends Component {
+  static navigationOptions = {
+    headerLeft: null,
+  };
+
   render() {
     return (
       <Wrapper>
@@ -23,18 +27,25 @@ export default class MainMenu extends Component {
           >
             Welcome
           </IconTitleSet>
-          <Button
+          {/* <Button
             onPress={() => this.props.navigation.navigate('GlobalChat', {
               name: this.state.name,
             })}
             style={styles.chatButton}
           >
             Chat Rooms
-          </Button>
+          </Button> */}
           <Button
             onPress={() => this.props.navigation.navigate('UserList')}
+            style={styles.button}
           >
             Contacts
+          </Button>
+          <Button
+            onPress={() => this.props.navigation.navigate('ActiveChatList')}
+            style={styles.button}
+          >
+            Conversations
           </Button>
         </View>
       </Wrapper>
@@ -50,7 +61,7 @@ const styles = StyleSheet.create({
   iconTitleSet: {
     marginBottom: 20,
   },
-  chatButton: {
+  button: {
     marginBottom: 10,
   },
 });

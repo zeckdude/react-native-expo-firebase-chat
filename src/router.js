@@ -11,10 +11,12 @@ import { showMessage } from 'react-native-flash-message';
 import Login from './components/screens/Login';
 import MainMenu from './components/screens/MainMenu';
 import UserList from './components/screens/UserList';
+import ActiveChatList from './components/screens/ActiveChatList';
 import Chat from './components/screens/Chat';
 import GlobalChat from './components/screens/GlobalChat';
 import ResetPassword from './components/screens/ResetPassword';
 import Register from './components/screens/Register';
+import BackButton from './components/shared/BackButton';
 import { signOutApp } from './auth';
 
 // Authorization flow created with help from:
@@ -75,6 +77,12 @@ export const SignedInStack = StackNavigator(
         title: 'Contacts',
       },
     },
+    ActiveChatList: {
+      screen: ActiveChatList,
+      navigationOptions: {
+        title: 'Conversations',
+      },
+    },
     Chat: {
       screen: Chat,
       navigationOptions: {
@@ -94,6 +102,7 @@ export const SignedInStack = StackNavigator(
       headerTitleStyle: {
         fontWeight: 'bold',
       },
+      headerLeft: <BackButton navigation={navigation} />,
       headerRight: (
         <Button
           primary

@@ -1,10 +1,22 @@
 import React, { Component } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { GiftedChat } from 'react-native-gifted-chat';
+import {
+  intersection, keyBy,
+} from 'lodash';
 import api from 'api';
 import { snapshotToArray } from 'helpers';
+import BackButton from '../shared/BackButton';
 
 export default class ChatRoom extends Component {
+  static navigationOptions = ({ navigation }) => {
+    const params = navigation.state.params || {};
+
+    return {
+      headerLeft: <BackButton navigation={navigation} runFunction={params.runFunction} />,
+    };
+  };
+
   constructor(props) {
     super(props);
     this.state = {
@@ -15,16 +27,24 @@ export default class ChatRoom extends Component {
       isLoadEarlierVisible: false,
     };
 
-    this.user = api.currentUser;
-    this.selectedUser = this.props.navigation.state.params.selectedUser;
-
-    console.log('this.user', this.user);
-    console.log('this.selectedUser', this.selectedUser);
+    // These are required already for the first render so they must be defined here
+    this.chatRoomId = this.props.navigation.state.params.roomId;
+    this.selectedUsers = this.props.navigation.state.params.selectedUsers;
   }
 
   async componentDidMount() {
+    this.roomUsers = await this.getRoomUsers();
+    this.nonCurrentUserRoomUserIds = this.getOtherRoomUserIds(this.roomUsers);
+
     // Get reference to the chat room conversation or create a new chat room reference
     this.chatRoomRef = await this.getChatRoomRef();
+
+    // Reset the unread messages count
+    api.setOrIncrementUnreadMessageCount({
+      roomId: this.chatRoomRef.key,
+      userIds: [api.currentUser.uid],
+      isCountBeingReset: true,
+    });
 
     // Save the existing messages into state and update them if a message is added/removed from the DB
     this.liveUpdateListener = this.liveUpdateMessages(this.chatRoomRef.child('messages').limitToLast(this.state.numMessagesToShow));
@@ -49,12 +69,16 @@ export default class ChatRoom extends Component {
     this.chatRoomRef.off();
   }
 
-  onceGetUserRooms = userId => api.dbRef.child(`userRooms/${userId}`).once('value');
+  // Get an array of ids for all the users in the room that are not the current user
+  getOtherRoomUserIds = roomUsers => Object.keys(roomUsers)
+    .filter(userId => userId !== api.currentUser.uid);
 
   getChatRoomRef = async () => {
-    // Get the chat room id based on the current user and the selected user
+    // Get the chat room id that was passed to the chat (if it is provided)
+    // Otherwise get the chat room based on the current user and the selected user
     let chatRoomId = await this.getChatRoomId();
 
+    // If an existing room is not found, create a new push key as the room id
     if (!chatRoomId) {
       chatRoomId = api.dbRef.child('chatRooms').push().key;
       this.setState({
@@ -62,7 +86,6 @@ export default class ChatRoom extends Component {
       });
     }
 
-    console.log('chatRoomId', chatRoomId);
     return api.dbRef.child(`chatRooms/${chatRoomId}`);
   }
 
@@ -73,74 +96,42 @@ export default class ChatRoom extends Component {
   }
 
   /**
-   * Save this chat room to the userRooms collection for both users
-   */
-  setUsersRoom = (chatRoomId) => {
-    const userRoomsRef = api.dbRef.child('userRooms');
-    userRoomsRef.update({
-      [this.user.uid]: {
-        [userRoomsRef.push().key]: chatRoomId,
-      },
-      [this.selectedUser.uid]: {
-        [userRoomsRef.push().key]: chatRoomId,
-      },
-    });
-  }
-
-  /**
-   * Save the users for this chat room to the roomUsers collection
-   */
-  setRoomUsers = (chatRoomId) => {
-    const roomUsersRef = api.dbRef.child(`roomUsers/${chatRoomId}`);
-    roomUsersRef.update({
-      [roomUsersRef.push().key]: this.user.uid,
-      [roomUsersRef.push().key]: this.selectedUser.uid,
-    });
-  }
-
-  /**
    * If this is the first message for a room, then save the following data:
    * Save users to the roomUsers collection for this room
    * Save the room to the userRooms collection for each of the users in the room
    * @return {void}
    */
-  createRoomData = () => {
-    if (this.state.isNewChatRoom) {
-      this.setRoomUsers(this.chatRoomRef.key);
-      this.setUsersRoom(this.chatRoomRef.key);
+  createNewRoomData = () => {
+    const roomUserIds = Object.keys(this.roomUsers);
 
-      this.setState({
-        isNewChatRoom: false,
-      });
-    }
+    api.setRoomUsers(this.chatRoomRef.key, roomUserIds);
+    api.setUsersRoom(this.chatRoomRef.key, roomUserIds);
+
+    this.setState({
+      isNewChatRoom: false,
+    });
   }
 
   // Identify the room as a personal chat room (one on one)
   // TODO: When chat rooms for more than 2 people are implemented, this logic needs to be altered
-  setupChatRoom = () => {
-    if (this.state.isNewChatRoom) {
-      this.chatRoomRef.set({
-        isPersonal: true,
-      });
-    }
+  setPersonalRoom = () => {
+    this.chatRoomRef.set({
+      isPersonal: true,
+    });
   }
 
   getChatRoomId = async () => {
-    // Get the rooms for the current user (userRooms)
-    const currentUserRoomsSnapshot = await this.onceGetUserRooms(this.user.uid);
-    const currentUserRooms = snapshotToArray(currentUserRoomsSnapshot);
-    console.log('currentUserRooms', currentUserRooms);
+    // If the room id is already specified, use that
+    if (this.chatRoomId) { return this.chatRoomId; }
 
-    // Get the active rooms for the user(s) that are not the current user (userRooms)
-    const selectedUserRoomsSnapshot = await this.onceGetUserRooms(this.selectedUser.uid);
-    const selectedUserRooms = snapshotToArray(selectedUserRoomsSnapshot);
-    console.log('selectedUserRooms', selectedUserRooms);
+    // Get the rooms for the current user
+    const currentUserRoomIds = await api.getUserRoomIds(api.currentUser.uid);
 
-    // Get the rooms they are both in together
-    const matchingRooms = currentUserRooms.filter(currentUserRoom => selectedUserRooms.includes(currentUserRoom));
-    console.log('matchingRooms', matchingRooms);
+    // Get the rooms for the user(s) that are not the current user
+    const selectedUsersRoomIds = await Promise.all(this.selectedUsers.map(async user => api.getUserRoomIds(user.uid)));
 
-    return matchingRooms[0];
+    // Find the room they are all in together or return undefined
+    return intersection(currentUserRoomIds, ...selectedUsersRoomIds)[0];
   }
 
   /**
@@ -149,22 +140,28 @@ export default class ChatRoom extends Component {
    * @return {void}
    */
   onSend = (messages) => {
-    // Setup flag based on the number of people in this chat room
-    this.setupChatRoom();
+    if (this.state.isNewChatRoom) {
+      // Setup flag based on the number of people in this chat room
+      this.setPersonalRoom();
 
-    // If this is the first message in a new room, save the information about the users in the room
-    this.createRoomData();
+      // If this is the first message in a new room, save the information about the users in the room
+      this.createNewRoomData();
+    }
 
-    //  Increment the messages count. It's important to keep this saved so the count is known without having to get all documents in the collection.
-    this.incrementMessageCount();
+    // Increment the unread messages count for users other than the current user
+    api.setOrIncrementUnreadMessageCount({
+      roomId: this.chatRoomRef.key,
+      userIds: this.nonCurrentUserRoomUserIds,
+    });
 
+    // Increase the limit of messages that are requested from firebase realtime database
     this.incrementNumMessagesToShow(1);
 
     const now = new Date().getTime();
     const messageValues = {
       text: messages[0].text,
       createdAt: now,
-      uid: this.user.uid,
+      uid: api.currentUser.uid,
     };
     this.chatRoomRef.child('messages').push(messageValues);
   }
@@ -182,23 +179,35 @@ export default class ChatRoom extends Component {
     }));
   }
 
+  getRoomUsers = async () => {
+    let roomUsers;
+    // If the conversation is coming from the contacts area, then the selected users are already known and we can build the room user data using that
+    if (this.selectedUsers) {
+      roomUsers = keyBy(this.selectedUsers, 'uid');
+      // Add the current user
+      roomUsers[api.currentUser.uid] = {
+        name: api.currentUser.displayName,
+        photoURL: api.currentUser.photoURL,
+        email: api.currentUser.email,
+        uid: api.currentUser.uid,
+      };
+    }
+
+    // If the conversation is a previous one, then we know the chat room id and we can find the users within it
+    if (this.chatRoomId) {
+      const roomData = await api.getRoomsByIds([this.chatRoomId]);
+      roomUsers = keyBy(roomData[0].users, 'uid');
+    }
+
+    return roomUsers;
+  }
+
   /**
    * Firebase socket connection that will run every time a message is added/removed from the messages property for the chat room
    * @param  {Array} messagesRef [Firebase reference to the messages for this chat room]
    * @return {void}
    */
   liveUpdateMessages = (messagesRef) => {
-    const roomUsersInfo = {
-      [this.user.uid]: {
-        name: this.user.displayName,
-        photoURL: this.user.photoURL,
-      },
-      [this.selectedUser.uid]: {
-        name: this.selectedUser.name,
-        photoURL: this.selectedUser.photoURL,
-      },
-    };
-
     messagesRef.on('value', (messagesSnapshot) => {
       // Get all messages and re-map the array to a format that works for Gifted Chat component
       const messages = snapshotToArray(messagesSnapshot).map(message => ({
@@ -207,8 +216,8 @@ export default class ChatRoom extends Component {
         createdAt: new Date(message.createdAt),
         user: {
           _id: message.uid,
-          name: roomUsersInfo[message.uid].name,
-          avatar: roomUsersInfo[message.uid].photoURL,
+          name: this.roomUsers[message.uid].name,
+          avatar: this.roomUsers[message.uid].photoURL,
         },
       }));
 
@@ -227,9 +236,9 @@ export default class ChatRoom extends Component {
           onSend={this.onSend}
           onLoadEarlier={() => this.incrementNumMessagesToShow(this.state.numMessagesToIncrement)}
           user={{
-            _id: this.user.uid,
-            name: this.user.displayName,
-            avatar: this.user.photoURL,
+            _id: api.currentUser.uid,
+            name: api.currentUser.displayName,
+            avatar: api.currentUser.photoURL,
           }}
           loadEarlier={isLoadEarlierVisible}
         />

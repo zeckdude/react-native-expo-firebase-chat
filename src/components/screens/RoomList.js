@@ -8,63 +8,52 @@ import {
 } from 'react-native';
 
 import api from 'api';
-import firebase from 'config/firebase';
 import Wrapper from 'screens/Wrapper';
 import IconTitleSet from 'shared/IconTitleSet';
 import Button from 'shared/Button';
 import { getGravatarSrc, snapshotToArray } from 'helpers';
 
-export default class UsersList extends Component {
+export default class UserList extends Component {
   state = {
-    users: [],
+    rooms: [],
     isLoading: true,
   };
 
   componentDidMount() {
-    firebase.auth().onAuthStateChanged((currentUser) => {
-      if (currentUser) {
-        this.getAllUsers(currentUser);
-      }
-    });
+    this.liveUpdateRooms();
   }
 
-  getAllUsers = async (currentUser) => {
-    const allUsers = api.dbRef.child('users');
+  liveUpdateRooms = (currentUser) => {
+    const allRooms = api.dbRef.child('chatRooms').orderByChild('isPersonal').equalTo(false);
 
-    const allUsersSnapshot = await allUsers.once('value');
-    const users = snapshotToArray(allUsersSnapshot)
-      .filter(user => user.email !== currentUser.email)
-      .map(user => ({
-        name: user.name,
-        uid: user.id,
-        email: user.email,
-        photoURL: user.photoURL,
-      }));
+    allRooms.on('value', (usersSnapshot) => {
+      let users = snapshotToArray(usersSnapshot);
+      users = snapshotToArray(usersSnapshot)
+        .filter(user => user.email !== currentUser.email)
+        .map(user => ({
+          name: user.name,
+          uid: user.id,
+          email: user.email,
+        }));
 
-    this.setState({
-      users,
-      isLoading: false,
+      this.setState({
+        users,
+        isLoading: false,
+      });
     });
-  }
-
-  getUserRooms = (user) => {
-    const userRooms = api.dbRef.child(`userRooms/${user.id}`);
-    return userRooms.once('value');
   }
 
   renderRow = ({ item }) => {
-    const {
-      name, email, uid, photoURL,
-    } = item;
+    const { name, email, uid } = item;
     return (
       <Button
         onPress={() => this.props.navigation.navigate('Chat', {
-          selectedUsers: [{
+          selectedUser: {
             name,
             email,
             uid,
-            photoURL,
-          }],
+            photoURL: getGravatarSrc(email),
+          },
         })}
         style={styles.userButton}
       >

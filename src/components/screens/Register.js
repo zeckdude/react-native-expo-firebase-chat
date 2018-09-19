@@ -114,6 +114,7 @@ export default class Register extends Component {
             email: this.state.email,
             uid: user.uid,
             name: this.state.name,
+            photoURL: getGravatarSrc(this.state.email),
           });
 
         // Update the user's metadata on firebase
