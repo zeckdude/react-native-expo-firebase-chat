@@ -7,6 +7,11 @@ This app is a one-to-one chat service using the Firebase Realtime Database for i
 
 The app was bootstrapped with [Create React Native App](https://github.com/react-community/create-react-native-app) and is running on Expo.
 
+## Shout out
+Thanks to the following peeps for giving me a push in the right direction:
+- [RN-firechat repo on Github](https://github.com/aryaminus/RN-firechat)
+- [Frank van Puffelen on StackOverflow. This dude rocks.](https://stackoverflow.com/users/209103/frank-van-puffelen)
+
 ## Configuration
 Add a `config/firebase.js` file with the following content (make sure to fill in the values from your own firebase account):
 
