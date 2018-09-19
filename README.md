@@ -21,7 +21,7 @@ export default {
 };
 ```
 
-## How to run the app
+## How to run the app (pick an option)
 ### 1. Run the app locally using the Expo XDE app (My preferred way):
   - Install the Expo XDE app from https://docs.expo.io/versions/latest/introduction/installation
   - Open the Expo XDE app
