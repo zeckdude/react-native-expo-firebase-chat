@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 
 import api from 'api';
-import firebase from 'config/firebase';
+import firebase from 'lib/firebase';
 import Wrapper from 'screens/Wrapper';
 import IconTitleSet from 'shared/IconTitleSet';
 import Button from 'shared/Button';

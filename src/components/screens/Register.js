@@ -11,7 +11,7 @@ import TextInput from 'shared/TextInput';
 import IconTitleSet from 'shared/IconTitleSet';
 import Wrapper from 'screens/Wrapper';
 
-import firebase from 'config/firebase';
+import firebase from 'lib/firebase';
 import validateForm from 'helpers/validation';
 import { getGravatarSrc } from 'helpers';
 

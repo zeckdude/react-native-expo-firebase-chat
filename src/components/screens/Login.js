@@ -13,7 +13,7 @@ import IconTitleSet from 'shared/IconTitleSet';
 import validateForm from 'helpers/validation';
 import Wrapper from 'screens/Wrapper';
 import { get } from 'lodash';
-import firebase from 'config/firebase';
+import firebase from 'lib/firebase';
 import { signInApp } from '../../auth';
 
 export default class Login extends Component {

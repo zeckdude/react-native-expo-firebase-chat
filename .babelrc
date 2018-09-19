@@ -14,6 +14,7 @@
         "screens": "./src/components/screens",
         "api": "./src/api",
         "config": "./src/config",
+        "lib": "./src/lib",
         "helpers": "./src/helpers",
       }
     }]

@@ -1,7 +1,7 @@
 /* eslint class-methods-use-this: 0 */
 
 import { snapshotToArray } from 'helpers';
-import firebase from '../config/firebase';
+import firebase from '../lib/firebase';
 
 class API {
   uid = '';
