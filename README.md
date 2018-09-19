@@ -1,7 +1,7 @@
 # React Native Expo Firebase Chat
 Simple and Clean one-to-one messenger and chat rooms
 
-<img src="./img/login-screen.png" width="50%" />
+<img src="./img/chat-demo.gif" width="50%" />
 
 This app is a one-to-one chat service using the Firebase Realtime Database for instant data. The chat rooms feature will be added in the future.
 
