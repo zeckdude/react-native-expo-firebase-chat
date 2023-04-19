@@ -1,4 +1,5 @@
-# React Native Expo Firebase Chat
+# React Native Expo Firebase Chat 💬
+
 Simple and Clean one-to-one messenger and chat rooms
 
 <img src="./img/chat-demo.gif" width="50%" />
